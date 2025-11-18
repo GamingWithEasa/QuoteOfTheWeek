@@ -8,7 +8,7 @@
         body {
             margin: 0;
             font-family: Arial, sans-serif;
-            background: #0b0b0b;
+            background: #101010;
             color: #ffffff;
         }
 
@@ -32,8 +32,40 @@
             width: 70%;
             font-size: 1.6rem;
             line-height: 2.2rem;
-            box-shadow: 0 0 18px rgba(255, 0, 0, 0.3);
+            box-shadow: 0 0 36px rgba(255, 0, 0, 0.3);
             border-radius: 10px;
+        }
+
+        .week-badge {
+            float: right;
+            background: linear-gradient(90deg,#8b0000,#ff1a1a);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
+
+        /* Fade-in animation for list items */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .quote-item {
+            background: #161616;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #8b0000;
+            transition: 0.3s;
+            border-radius: 6px;
+            opacity: 0;
+            transform: translateY(10px);
+            animation-name: fadeInUp;
+            animation-duration: 800ms;
+            animation-fill-mode: forwards;
+            animation-timing-function: cubic-bezier(.16,.84,.24,1);
         }
 
         .section-title {
@@ -48,6 +80,9 @@
             margin: 20px auto;
             width: 70%;
             padding: 10px;
+            overflow: hidden;
+            transition: max-height 0.7s cubic-bezier(.2,.9,.2,1), min-height 0.7s cubic-bezier(.2,.9,.2,1);
+            max-height: 5000px; /* Large enough for many quotes */
         }
 
         .quote-item {
@@ -62,7 +97,7 @@
         .quote-item:hover {
             background: #1d1d1d;
             transform: scale(1.02);
-            box-shadow: 0 0 10px rgba(255,0,0,0.3);
+            box-shadow: 0 0 20px rgba(255,0,0,0.3);
         }
 
         footer {
@@ -78,6 +113,7 @@
     <header>Quote of the Week</header>
 
     <div class="quote-box" id="quoteOfWeek">
+        <div class="week-badge" id="currentWeekLabel">Week ?</div>
         "Success is not final, failure is not fatal: It is the courage to continue that counts."
         <br><br>
         <span style="font-size: 1.2rem; color: #ff1a1a;">— Easa</span>
@@ -86,11 +122,156 @@
     <div class="section-title">Previous Quotes</div>
 
     <div class="previous-list" id="previousQuotes">
-        <div class="quote-item">"The only limit to our realization of tomorrow is our doubts of today." — Easa</div>
-        <div class="quote-item">"In the middle of difficulty lies opportunity." — Easa</div>
-        <div class="quote-item">"Dream big and dare to fail." — Easa</div>
-        <div class="quote-item">"Your time is limited, don't waste it living someone else's life." — Easa</div>
+        <!-- Previous quotes will be loaded here from /PreviousQuotes/*.json -->
     </div>
+
+    <script>
+        (function loadPreviousQuotes() {
+            const container = document.getElementById('previousQuotes');
+
+            function makeItem(quote, author, week, monthYear, index) {
+                const div = document.createElement('div');
+                div.className = 'quote-item';
+
+                const badge = document.createElement('div');
+                badge.className = 'week-badge';
+                badge.style.float = 'right';
+                badge.textContent = `Week ${week} - ${monthYear}`;
+
+                const text = document.createElement('div');
+                text.innerHTML = `${quote} <br><br> <span style=\"font-size: 1.0rem; color: #ff1a1a;\">— ${author}</span>`;
+
+                div.appendChild(badge);
+                div.appendChild(text);
+
+                // Staggered fade-in: delay increases down the list
+                div.style.animationDelay = `${index * 0.14}s`;
+                return div;
+            }
+
+            // ISO week helpers
+            function getISOWeek(date) {
+                const tmp = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+                // Thursday in current week decides the year.
+                tmp.setUTCDate(tmp.getUTCDate() + 4 - (tmp.getUTCDay()||7));
+                const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(),0,1));
+                const weekNo = Math.ceil((((tmp - yearStart) / 86400000) + 1)/7);
+                return { year: tmp.getUTCFullYear(), week: weekNo };
+            }
+
+            function dateOfISOWeek(isoWeek, isoYear) {
+                const simple = new Date(Date.UTC(isoYear, 0, 1 + (isoWeek - 1) * 7));
+                const dow = simple.getUTCDay();
+                let ISOweekStart = new Date(simple);
+                if (dow <= 4) ISOweekStart.setUTCDate(simple.getUTCDate() - simple.getUTCDay() + 1);
+                else ISOweekStart.setUTCDate(simple.getUTCDate() + 8 - simple.getUTCDay());
+                return ISOweekStart; // Monday of that ISO week
+            }
+
+            function pad(n){ return n < 10 ? '0'+n : ''+n; }
+
+            function formatMMYY(date) {
+                const m = date.getUTCMonth() + 1; // 1-12
+                const y = date.getUTCFullYear() % 100; // two-digit year
+                return `${pad(m)}/${pad(y)}`;
+            }
+
+            // Strategy: try to fetch files named Week1.json, Week2.json, ...
+            // Stop after 12 consecutive misses to avoid excessive requests.
+            const maxTry = 200;
+            let consecutiveMisses = 0;
+            const maxConsecutiveMisses = 12;
+
+            let foundAny = false;
+
+            // Kick off sequential fetches to allow early termination on consecutive misses.
+            (async () => {
+                const found = [];
+                for (let i = 1; i <= maxTry; i++) {
+                    const path = `PreviousQuotes/Week${i}.json`;
+                    try {
+                        const res = await fetch(path);
+                        if (!res.ok) {
+                            consecutiveMisses++;
+                            if (consecutiveMisses >= maxConsecutiveMisses) break;
+                            continue;
+                        }
+
+                        consecutiveMisses = 0;
+                        foundAny = true;
+                        const data = await res.json();
+                        const quoteText = data.Quote || data.quote || '';
+                        const author = data.Author || data.author || '';
+                        found.push({ week: i, quote: quoteText, author });
+                    } catch (err) {
+                        consecutiveMisses++;
+                        if (consecutiveMisses >= maxConsecutiveMisses) break;
+                        continue;
+                    }
+                }
+
+                if (!foundAny) {
+                    const note = document.createElement('div');
+                    note.className = 'quote-item';
+                    note.textContent = 'No previous quotes found in the PreviousQuotes folder.';
+                    container.appendChild(note);
+                    return;
+                }
+
+                // Sort by week descending so latest (highest number) appears first
+                found.sort((a, b) => b.week - a.week);
+
+                // Set current week to highest previous week + 1 (or 1 if none)
+                const highest = found.length ? found[0].week : 0;
+                const currentWeek = highest + 1;
+                const currentLabel = document.getElementById('currentWeekLabel');
+
+                // Compute current ISO week/year from today's date
+                const today = new Date();
+                const currentISO = getISOWeek(today);
+
+                // get Monday of current ISO week
+                const currentISOWeekStart = dateOfISOWeek(currentISO.week, currentISO.year);
+                if (currentLabel) currentLabel.textContent = `Week ${currentWeek} - ${formatMMYY(currentISOWeekStart)}`;
+
+                // Animate container height as items are added, and auto-scroll if at bottom
+                let prevHeight = container.offsetHeight;
+                let atBottom = (window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 2);
+
+                for (let i = 0; i < found.length; i++) {
+                    const item = found[i];
+
+                    // Compute ISO week label for this item by subtracting weeks from current ISO week
+                    const offsetWeeks = currentWeek - item.week; // how many weeks before current
+                    const itemDate = new Date(currentISOWeekStart);
+                    itemDate.setUTCDate(itemDate.getUTCDate() - offsetWeeks * 7);
+                    const itemISO = getISOWeek(itemDate);
+                    const monthYear = formatMMYY(itemDate);
+
+                    // Before adding, measure height
+                    prevHeight = container.offsetHeight;
+                    const el = makeItem(item.quote, item.author, item.week, monthYear, i);
+                    container.appendChild(el);
+
+                    // After adding, animate container height
+                    const newHeight = container.offsetHeight;
+                    container.style.minHeight = prevHeight + 'px';
+                    container.style.maxHeight = newHeight + 'px';
+                    // Force reflow for transition
+                    void container.offsetWidth;
+                    container.style.minHeight = '';
+                    container.style.maxHeight = '';
+
+                    // If user was at bottom, scroll to bottom after each add
+                    if (atBottom) {
+                        setTimeout(() => {
+                            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                        }, (i+1) * 140 + 150); // after fade-in
+                    }
+                }
+            })();
+        })();
+    </script>
 
     <footer>© 2025 Quote Archive. All Rights Reserved.</footer>
 </body>
