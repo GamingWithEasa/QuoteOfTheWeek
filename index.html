@@ -8,8 +8,19 @@
         body {
             margin: 0;
             font-family: Arial, sans-serif;
-            background: #101010;
+            /* Updated background to animated gradient */
+            background: #000000;
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
             color: #ffffff;
+            min-height: 100vh;
+        }
+
+        /* Added background animation keyframes */
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
         header {
@@ -21,11 +32,38 @@
             letter-spacing: 3px;
             text-transform: uppercase;
             color: white;
+            /* Added header entrance animation */
+            animation: slideDown 1s ease-out;
+            box-shadow: 0 4px 20px rgba(255, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Added shimmer effect to header */
+        header::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
         }
 
         .quote-box {
             margin: 40px auto;
-            background: #111;
+            background: rgba(17, 17, 17, 0.9);
             border-left: 6px solid #ff1a1a;
             border-right: 6px solid #8b0000;
             padding: 25px;
@@ -34,6 +72,28 @@
             line-height: 2.2rem;
             box-shadow: 0 0 36px rgba(255, 0, 0, 0.3);
             border-radius: 10px;
+            /* Added entrance animation for main quote */
+            animation: fadeInScale 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+            backdrop-filter: blur(5px);
+        }
+
+        .main-week-number {
+            font-size: 2.2rem;
+            color: #ff1a1a;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+
+        .main-quote-text {
+            font-size: 1.6rem;
+            color: #ffffff;
+            margin-top: 6px;
+        }
+
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: scale(0.9) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
         }
 
         .week-badge {
@@ -45,20 +105,28 @@
             font-size: 0.9rem;
             font-weight: bold;
             box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+            /* Added pulse animation to badge */
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 26, 26, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 26, 26, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 26, 26, 0); }
         }
 
         /* Fade-in animation for list items */
         @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(20px); }
             to   { opacity: 1; transform: translateY(0); }
         }
 
         .quote-item {
-            background: #161616;
+            background: rgba(22, 22, 22, 0.8);
             padding: 15px;
             margin-bottom: 15px;
             border-left: 4px solid #8b0000;
-            transition: 0.3s;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             border-radius: 6px;
             opacity: 0;
             transform: translateY(10px);
@@ -66,6 +134,16 @@
             animation-duration: 800ms;
             animation-fill-mode: forwards;
             animation-timing-function: cubic-bezier(.16,.84,.24,1);
+            /* Added border for better contrast */
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-left: 4px solid #8b0000;
+        }
+
+        .quote-item:hover {
+            background: #1d1d1d;
+            transform: scale(1.02) translateX(5px);
+            box-shadow: -5px 5px 20px rgba(0,0,0,0.5);
+            border-left-color: #ff1a1a;
         }
 
         .section-title {
@@ -74,6 +152,15 @@
             font-size: 2rem;
             color: #ff1a1a;
             text-shadow: 0 0 10px rgba(255,0,0,0.6);
+            /* Added tracking-in animation */
+            animation: trackingIn 1.5s cubic-bezier(0.215, 0.610, 0.355, 1.000) both;
+            animation-delay: 0.5s;
+        }
+
+        @keyframes trackingIn {
+            0% { letter-spacing: -0.5em; opacity: 0; }
+            40% { opacity: 0.6; }
+            100% { opacity: 1; }
         }
 
         .previous-list {
@@ -85,27 +172,19 @@
             max-height: 5000px; /* Large enough for many quotes */
         }
 
-        .quote-item {
-            background: #161616;
-            padding: 15px;
-            margin-bottom: 15px;
-            border-left: 4px solid #8b0000;
-            transition: 0.3s;
-            border-radius: 6px;
-        }
-
-        .quote-item:hover {
-            background: #1d1d1d;
-            transform: scale(1.02);
-            box-shadow: 0 0 20px rgba(255,0,0,0.3);
-        }
-
         footer {
             margin-top: 60px;
             text-align: center;
             padding: 20px;
             font-size: 0.9rem;
             color: #777;
+            /* Added fade in for footer */
+            animation: fadeIn 2s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
     </style>
 </head>
@@ -218,12 +297,17 @@
                     return;
                 }
 
-                // Sort by week descending so latest (highest number) appears first
+                // Find the smallest week number and treat that file as the current quote
+                const weeks = found.map(f => f.week);
+                const minWeek = Math.min(...weeks);
+                const currentIndex = found.findIndex(f => f.week === minWeek);
+                const currentObj = currentIndex >= 0 ? found.splice(currentIndex, 1)[0] : null;
+
+                // Sort remaining previous weeks by week descending (newest-first)
                 found.sort((a, b) => b.week - a.week);
 
-                // Set current week to highest previous week + 1 (or 1 if none)
-                const highest = found.length ? found[0].week : 0;
-                const currentWeek = highest + 1;
+                // currentWeek is the week number from the first (smallest) file
+                const currentWeek = currentObj ? currentObj.week : (found.length ? found[0].week + 1 : 1);
                 const currentLabel = document.getElementById('currentWeekLabel');
 
                 // Compute current ISO week/year from today's date
@@ -234,6 +318,16 @@
                 const currentISOWeekStart = dateOfISOWeek(currentISO.week, currentISO.year);
                 if (currentLabel) currentLabel.textContent = `Week ${currentWeek} - ${formatMMYY(currentISOWeekStart)}`;
 
+                // If we found a currentObj, populate the main quote box with its content
+                const mainBox = document.getElementById('quoteOfWeek');
+                if (currentObj && mainBox) {
+                    mainBox.innerHTML =
+                        `<div class="week-badge" id="currentWeekLabel">Week ${currentWeek} - ${formatMMYY(currentISOWeekStart)}</div>` +
+                        `<div class="main-week-number">Week ${currentWeek}</div>` +
+                        `<div class="main-quote-text">${currentObj.quote}</div>` +
+                        `<br><span style="font-size: 1.2rem; color: #ff1a1a;">— ${currentObj.author}</span>`;
+                }
+
                 // Animate container height as items are added, and auto-scroll if at bottom
                 let prevHeight = container.offsetHeight;
                 let atBottom = (window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 2);
@@ -241,11 +335,10 @@
                 for (let i = 0; i < found.length; i++) {
                     const item = found[i];
 
-                    // Compute ISO week label for this item by subtracting weeks from current ISO week
+                    // Compute month/year label for this item by subtracting weeks from current ISO week
                     const offsetWeeks = currentWeek - item.week; // how many weeks before current
                     const itemDate = new Date(currentISOWeekStart);
                     itemDate.setUTCDate(itemDate.getUTCDate() - offsetWeeks * 7);
-                    const itemISO = getISOWeek(itemDate);
                     const monthYear = formatMMYY(itemDate);
 
                     // Before adding, measure height
