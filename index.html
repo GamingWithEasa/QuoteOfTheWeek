@@ -4,6 +4,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Quote of the Week</title>
+    <!-- Open Graph meta tags for link previews -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://gamingwitheasa.github.io/QuoteOfTheWeek/" />
+    <meta property="og:title" content="Quote of the Week" />
+    <meta property="og:description" content="Discover the quote of the week" />
+    <meta property="og:image" content="https://via.placeholder.com/1200x630?text=Quote+of+the+Week" />
+    <meta property="og:site_name" content="Quote of the Week" />
+    <!-- Twitter Card meta tags -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:title" content="Quote of the Week" />
+    <meta property="twitter:description" content="Discover the quote of the week" />
+    <meta property="twitter:image" content="https://via.placeholder.com/1200x630?text=Quote+of+the+Week" />
     <style>
         body {
             margin: 0;
@@ -192,10 +204,10 @@
     <header>Quote of the Week</header>
 
     <div class="quote-box" id="quoteOfWeek">
-        <div class="week-badge" id="currentWeekLabel">Week ?</div>
+        <!-- <div class="week-badge" id="currentWeekLabel">Week ?</div>
         "Success is not final, failure is not fatal: It is the courage to continue that counts."
         <br><br>
-        <span style="font-size: 1.2rem; color: #ff1a1a;">— Easa</span>
+        <span style="font-size: 1.2rem; color: #ff1a1a;">— Easa</span> -->
     </div>
 
     <div class="section-title">Previous Quotes</div>
@@ -266,6 +278,26 @@
             // Kick off sequential fetches to allow early termination on consecutive misses.
             (async () => {
                 const found = [];
+                let currentObj = null;
+
+                // First, try to fetch a Week*.json file from the root (current week)
+                for (let i = 1; i <= 200; i++) {
+                    const path = `Week${i}.json`;
+                    try {
+                        const res = await fetch(path);
+                        if (res.ok) {
+                            const data = await res.json();
+                            const quoteText = data.Quote || data.quote || '';
+                            const author = data.Author || data.author || '';
+                            currentObj = { week: i, quote: quoteText, author };
+                            break; // Use the first one found as current
+                        }
+                    } catch (err) {
+                        // Continue searching
+                    }
+                }
+
+                // Then, fetch files from PreviousQuotes/ folder
                 for (let i = 1; i <= maxTry; i++) {
                     const path = `PreviousQuotes/Week${i}.json`;
                     try {
@@ -289,7 +321,7 @@
                     }
                 }
 
-                if (!foundAny) {
+                if (!currentObj && !foundAny) {
                     const note = document.createElement('div');
                     note.className = 'quote-item';
                     note.textContent = 'No previous quotes found in the PreviousQuotes folder.';
@@ -297,11 +329,15 @@
                     return;
                 }
 
-                // Find the smallest week number and treat that file as the current quote
-                const weeks = found.map(f => f.week);
-                const minWeek = Math.min(...weeks);
-                const currentIndex = found.findIndex(f => f.week === minWeek);
-                const currentObj = currentIndex >= 0 ? found.splice(currentIndex, 1)[0] : null;
+                // If no root-level file found, use the smallest from PreviousQuotes/ as current
+                if (!currentObj && found.length > 0) {
+                    const weeks = found.map(f => f.week);
+                    const minWeek = Math.min(...weeks);
+                    const currentIndex = found.findIndex(f => f.week === minWeek);
+                    if (currentIndex >= 0) {
+                        currentObj = found.splice(currentIndex, 1)[0];
+                    }
+                }
 
                 // Sort remaining previous weeks by week descending (newest-first)
                 found.sort((a, b) => b.week - a.week);
@@ -320,12 +356,20 @@
 
                 // If we found a currentObj, populate the main quote box with its content
                 const mainBox = document.getElementById('quoteOfWeek');
-                if (currentObj && mainBox) {
+                if (!currentObj && mainBox) {
                     mainBox.innerHTML =
                         `<div class="week-badge" id="currentWeekLabel">Week ${currentWeek} - ${formatMMYY(currentISOWeekStart)}</div>` +
                         `<div class="main-week-number">Week ${currentWeek}</div>` +
                         `<div class="main-quote-text">${currentObj.quote}</div>` +
                         `<br><span style="font-size: 1.2rem; color: #ff1a1a;">— ${currentObj.author}</span>`;
+                }
+
+                // Update Open Graph meta tags for link previews
+                if (currentObj) {
+                    document.querySelector('meta[property="og:title"]').setAttribute('content', `Week ${currentWeek} - Quote of the Week`);
+                    document.querySelector('meta[property="og:description"]').setAttribute('content', `"${currentObj.quote}" — ${currentObj.author}`);
+                    document.querySelector('meta[property="twitter:title"]').setAttribute('content', `Week ${currentWeek} - Quote of the Week`);
+                    document.querySelector('meta[property="twitter:description"]').setAttribute('content', `"${currentObj.quote}" — ${currentObj.author}`);
                 }
 
                 // Animate container height as items are added, and auto-scroll if at bottom
